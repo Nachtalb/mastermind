@@ -1,9 +1,13 @@
 # Simple Mastermind CLI game made with python
+
 __author__ = 'Nachtalb'
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 __date__ = '2019-02-21'
 
+from collections import namedtuple
 from random import choices
+
+Pin = namedtuple('Pin', ('char', 'index', 'match_index'))
 
 
 class MasterMind:
@@ -18,7 +22,6 @@ class MasterMind:
               f'Available colour choices are: {", ".join(self.available_chars)}\n'
               f'Always guess 4 colors not more not less\n'
               f'{"-" * 40}')
-        print(self.answer)
 
         guess_counter = 0
         while True:
@@ -27,15 +30,10 @@ class MasterMind:
             if not guess or len(guess) != 4 or set(guess) - set(self.available_chars):
                 continue
 
-            positional_correct = 0
-            correct = 0
-            for index, char in enumerate(guess):
-                if char in self.answer and char == self.answer[index]:
-                    positional_correct += 1
-                elif char in self.answer:
-                    correct += 1
+            positional_pins = self.get_positional_pins(guess)
+            not_positional_pins = self.get_not_possitional_pins(guess, positional_pins)
 
-            print(f'Positional correct: {positional_correct}, not positional correct: {correct}')
+            print(f'Positional correct: {len(positional_pins)}, not positional correct: {len(not_positional_pins)}')
 
             if list(guess) == self.answer:
                 print('You won')
@@ -43,6 +41,28 @@ class MasterMind:
             if guess_counter == self.max_guesses:
                 print('You lost')
                 break
+
+    def get_positional_pins(self, guess):
+        pins = []
+        for index, char in enumerate(guess):
+            if char == self.answer[index]:
+                pins.append(Pin(char, index, index))
+        return pins
+
+    def get_not_possitional_pins(self, guess, blacklist_pins):
+        pins = []
+        for index, char in enumerate(guess):
+            indexes_in_answer = [i for i, item in enumerate(self.answer) if item == char]
+            if not indexes_in_answer:
+                continue
+            blacklist_indexes = [p.match_index for p in blacklist_pins]
+            blacklist_indexes.extend([p.match_index for p in pins])
+
+            white_list_indexes = set(indexes_in_answer) - set(blacklist_indexes)
+
+            if index not in blacklist_pins and white_list_indexes:
+                pins.append(Pin(index, char, list(white_list_indexes)[0]))
+        return pins
 
 
 if __name__ == '__main__':
